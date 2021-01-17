@@ -61,11 +61,9 @@ def draw_lives(surf, x, y, lives, img):
 
 
 def show_go_screen():
-    st = str(open("high_score.txt").read())
     screen.blit(background, background_rect)
     screen.blit(background2, background_rect2)
     screen.blit(background3, background_rect3)
-    draw_text(screen, 'high score:' + st, 32, WIDTH / 2, HEIGHT-40)
     draw_text(screen, "SHMUP!", 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, "Arrow keys move, Space to fire", 22,
               WIDTH / 2, HEIGHT / 2)
@@ -98,7 +96,7 @@ class Player(pygame.sprite.Sprite):
         self.hidden = False
         self.hide_timer = pygame.time.get_ticks()
         self.power = 1
-        self.armour = 1
+        self.armour = 0.5
         self.power_time = pygame.time.get_ticks()
         self.damage = 30
 
@@ -215,11 +213,13 @@ class Player(pygame.sprite.Sprite):
 class Mob(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image_orig = random.choice(meteor_images)
+        # self.image_orig = random.choice(meteor_images)
+        self.image_orig = pygame.image.load(path.join(img_dir, 'meteorBrown_med1.png')).convert_alpha()
         self.image_orig.set_colorkey(BLACK)
         self.image = self.image_orig.copy()
         self.rect = self.image.get_rect()
         self.hit_point = random.randint(30, 100)
+        self.image_orig = pygame.transform.scale(self.image_orig, (43 * self.hit_point // 60, 43 * self.hit_point // 60))
         self.score = self.hit_point
         self.rect.x = random.randrange(WIDTH - self.rect.width)
         self.rect.y = random.randrange(-150, -100)
@@ -248,6 +248,15 @@ class Mob(pygame.sprite.Sprite):
             self.rect.x = random.randrange(WIDTH - self.rect.width)
             self.rect.y = random.randrange(-100, -40)
             self.speedy = random.randrange(1, 8)
+        if self.hit_point <= 0:
+            self.kill()
+            expl = Explosion(hit.rect.center, 'lg')
+            all_sprites.add(expl)
+            if random.random() > 0.9:
+                pow = Pow(hit.rect.center)
+                all_sprites.add(pow)
+                powerups.add(pow)
+            newmob()
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -307,11 +316,12 @@ class Explosion(pygame.sprite.Sprite):
                 self.rect.center = center
 
 
-background = pygame.image.load(path.join(img_dir, "starfield.png")).convert()
+bg_name = 'starfield.png'
+background = pygame.image.load(path.join(img_dir, bg_name)).convert()
 background_rect = background.get_rect()
-background2 = pygame.image.load(path.join(img_dir, "starfield.png")).convert()
+background2 = pygame.image.load(path.join(img_dir, bg_name)).convert()
 background_rect2 = background2.get_rect()
-background3 = pygame.image.load(path.join(img_dir, "starfield.png")).convert()
+background3 = pygame.image.load(path.join(img_dir, bg_name)).convert()
 background_rect3 = background3.get_rect()
 background_rect2.top = background_rect.bottom
 background_rect3.bottom = background_rect.top
@@ -320,9 +330,9 @@ player_mini_img = pygame.transform.scale(player_img, (25, 19))
 player_mini_img.set_colorkey(BLACK)
 bullet_img = pygame.image.load(path.join(img_dir, "laserRed16.png")).convert()
 meteor_images = []
-meteor_list = ['meteorBrown_med1.png']
-for img in meteor_list:
-    meteor_images.append(pygame.image.load(path.join(img_dir, img)).convert_alpha())
+# meteor_list = ['meteorBrown_med1.png']
+# for img in meteor_list:
+#     meteor_images.append(pygame.image.load(path.join(img_dir, img)).convert_alpha())
 
 explosion_anim = {}
 explosion_anim['lg'] = []
@@ -384,20 +394,14 @@ while running:
 
     all_sprites.update()
 
-    hits = pygame.sprite.groupcollide(mobs, bullets, True, True)
+    hits = pygame.sprite.groupcollide(mobs, bullets, False, True)
     for hit in hits:
         score += 50 + hit.score // 4
         # random.choice(expl_sounds).play()
         print(hit.hit_point)
         hit.hit_point -= player.damage
         print(hit.hit_point)
-        expl = Explosion(hit.rect.center, 'lg')
-        all_sprites.add(expl)
-        if random.random() > 0.9:
-            pow = Pow(hit.rect.center)
-            all_sprites.add(pow)
-            powerups.add(pow)
-        newmob()
+
 
     hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
@@ -425,11 +429,6 @@ while running:
 
     if player.lives == 0:
         game_over = True
-        st = str(open("high_score.txt").read())
-        if score > int(st):
-            file = open("high_score.txt", 'w')
-            file.write(str(score))
-
 
     screen.fill(BLACK)
     screen.blit(background, background_rect)
