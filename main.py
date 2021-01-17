@@ -20,7 +20,7 @@ YELLOW = (255, 255, 0)
 pygame.init()
 pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Shmup!")
+pygame.display.set_caption("Космонарды!")
 clock = pygame.time.Clock()
 
 font_name = pygame.font.match_font('arial')
@@ -61,11 +61,9 @@ def draw_lives(surf, x, y, lives, img):
 
 
 def show_go_screen():
-    st = open("data/high_score.txt").read()
     screen.blit(background, background_rect)
     screen.blit(background2, background_rect2)
     screen.blit(background3, background_rect3)
-    draw_text(screen, 'high score:' + st, 32, WIDTH / 2, HEIGHT-40)
     draw_text(screen, "SHMUP!", 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, "Arrow keys move, Space to fire", 22,
               WIDTH / 2, HEIGHT / 2)
@@ -78,7 +76,8 @@ def show_go_screen():
             if event.type == pygame.QUIT:
                 pygame.quit()
             if event.type == pygame.KEYDOWN:
-                waiting = False
+                if event.key == pygame.K_ESCAPE:
+                    waiting = False
 
 
 class Player(pygame.sprite.Sprite):
@@ -99,13 +98,20 @@ class Player(pygame.sprite.Sprite):
         self.hide_timer = pygame.time.get_ticks()
         self.power = 1
         self.armour = 0.5
+        self.infinite_lvl = True
         self.power_time = pygame.time.get_ticks()
         self.damage = 30
+        self.shield_activated = True
+        self.shield_active = pygame.time.get_ticks()
+        self.last_armour = self.armour
+        self.shield_lenght = 1000
+        self.shield_cd = 5000
 
     def update(self):
-        if self.power >= 2 and pygame.time.get_ticks() - self.power_time > POWERUP_TIME:
-            self.power -= 1
-            self.power_time = pygame.time.get_ticks()
+        if not self.infinite_lvl:
+            if self.power >= 2 and pygame.time.get_ticks() - self.power_time > POWERUP_TIME:
+                self.power -= 1
+                self.power_time = pygame.time.get_ticks()
 
         if self.hidden and pygame.time.get_ticks() - self.hide_timer > 1000:
             self.hidden = False
@@ -125,6 +131,9 @@ class Player(pygame.sprite.Sprite):
             self.speedy = 8
         if keystate[pygame.K_SPACE]:
             self.shoot()
+        if keystate[pygame.K_LCTRL]:
+            if not self.shield_activated and pygame.time.get_ticks() - self.shield_active >= self.shield_cd:
+                self.activate_shield()
         self.rect.x += self.speedx
         self.rect.y += self.speedy
         if self.rect.right > WIDTH:
@@ -135,93 +144,118 @@ class Player(pygame.sprite.Sprite):
             self.rect.bottom = HEIGHT
         if self.rect.top < 0:
             self.rect.top = 0
+        if self.shield_activated and pygame.time.get_ticks() - self.shield_active >= self.shield_lenght:
+            self.armour = self.last_armour
+            self.shield_activated = False
 
     def powerup(self):
         self.power += 1
         self.power_time = pygame.time.get_ticks()
 
     def shoot(self):
-        now = pygame.time.get_ticks()
-        if now - self.last_shot > self.shoot_delay:
-            self.shoot_delay = 250
-            self.last_shot = now
-            if self.power == 1:
-                bullet = Bullet(self.rect.centerx, self.rect.top)
-                all_sprites.add(bullet)
-                bullets.add(bullet)
-                # shoot_sound.play()
-            if self.power == 2:
-                bullet1 = Bullet(self.rect.left, self.rect.centery)
-                bullet2 = Bullet(self.rect.right, self.rect.centery)
-                all_sprites.add(bullet1)
-                all_sprites.add(bullet2)
-                bullets.add(bullet1)
-                bullets.add(bullet2)
-                # shoot_sound.play()
-            if self.power == 3:
-                bullet1 = Bullet(self.rect.left, self.rect.centery)
-                bullet2 = Bullet(self.rect.right, self.rect.centery)
-                bullet3 = Bullet(self.rect.centerx, self.rect.centery)
-                all_sprites.add(bullet1)
-                all_sprites.add(bullet2)
-                all_sprites.add(bullet3)
-                bullets.add(bullet1)
-                bullets.add(bullet2)
-                bullets.add(bullet3)
-            if self.power == 4:
-                bullet1 = Bullet(self.rect.left, self.rect.centery)
-                bullet2 = Bullet(self.rect.right, self.rect.centery)
-                bullet3 = Bullet(self.rect.centerx + 7, self.rect.centery)
-                bullet4 = Bullet(self.rect.centerx - 7, self.rect.centery)
-                all_sprites.add(bullet1)
-                all_sprites.add(bullet2)
-                all_sprites.add(bullet3)
-                all_sprites.add(bullet4)
-                bullets.add(bullet1)
-                bullets.add(bullet2)
-                bullets.add(bullet3)
-                bullets.add(bullet4)
-            if self.power == 5:
-                self.shoot_delay = 50
-                bullet = Bullet(self.rect.centerx, self.rect.top)
-                all_sprites.add(bullet)
-                bullets.add(bullet)
-            if self.power == 6:
-                self.shoot_delay = 50
-                bullet1 = Bullet(self.rect.left, self.rect.centery)
-                bullet2 = Bullet(self.rect.right, self.rect.centery)
-                all_sprites.add(bullet1)
-                all_sprites.add(bullet2)
-                bullets.add(bullet1)
-                bullets.add(bullet2)
-            if self.power >= 7:
-                self.shoot_delay = 50
-                bullet1 = Bullet(self.rect.left, self.rect.centery)
-                bullet2 = Bullet(self.rect.right, self.rect.centery)
-                bullet3 = Bullet(self.rect.centerx, self.rect.centery)
-                all_sprites.add(bullet1)
-                all_sprites.add(bullet2)
-                all_sprites.add(bullet3)
-                bullets.add(bullet1)
-                bullets.add(bullet2)
-                bullets.add(bullet3)
+        if not self.shield_activated:
+            now = pygame.time.get_ticks()
+            if now - self.last_shot > self.shoot_delay:
+                self.shoot_delay = 250
+                self.last_shot = now
+                if self.power == 1:
+                    bullet = Bullet(self.rect.centerx, self.rect.top)
+                    all_sprites.add(bullet)
+                    bullets.add(bullet)
+                    # shoot_sound.play()
+                if self.power == 2:
+                    bullet1 = Bullet(self.rect.left, self.rect.centery)
+                    bullet2 = Bullet(self.rect.right, self.rect.centery)
+                    all_sprites.add(bullet1)
+                    all_sprites.add(bullet2)
+                    bullets.add(bullet1)
+                    bullets.add(bullet2)
+                    # shoot_sound.play()
+                if self.power == 3:
+                    bullet1 = Bullet(self.rect.left, self.rect.centery)
+                    bullet2 = Bullet(self.rect.right, self.rect.centery)
+                    bullet3 = Bullet(self.rect.centerx, self.rect.centery)
+                    all_sprites.add(bullet1)
+                    all_sprites.add(bullet2)
+                    all_sprites.add(bullet3)
+                    bullets.add(bullet1)
+                    bullets.add(bullet2)
+                    bullets.add(bullet3)
+                if self.power == 4:
+                    bullet1 = Bullet(self.rect.left, self.rect.centery)
+                    bullet2 = Bullet(self.rect.right, self.rect.centery)
+                    bullet3 = Bullet(self.rect.centerx + 7, self.rect.centery)
+                    bullet4 = Bullet(self.rect.centerx - 7, self.rect.centery)
+                    all_sprites.add(bullet1)
+                    all_sprites.add(bullet2)
+                    all_sprites.add(bullet3)
+                    all_sprites.add(bullet4)
+                    bullets.add(bullet1)
+                    bullets.add(bullet2)
+                    bullets.add(bullet3)
+                    bullets.add(bullet4)
+                if self.power == 5:
+                    self.shoot_delay = 50
+                    bullet = Bullet(self.rect.centerx, self.rect.top)
+                    all_sprites.add(bullet)
+                    bullets.add(bullet)
+                if self.power == 6:
+                    self.shoot_delay = 50
+                    bullet1 = Bullet(self.rect.left, self.rect.centery)
+                    bullet2 = Bullet(self.rect.right, self.rect.centery)
+                    all_sprites.add(bullet1)
+                    all_sprites.add(bullet2)
+                    bullets.add(bullet1)
+                    bullets.add(bullet2)
+                if self.power >= 7:
+                    self.shoot_delay = 50
+                    bullet1 = Bullet(self.rect.left, self.rect.centery)
+                    bullet2 = Bullet(self.rect.right, self.rect.centery)
+                    bullet3 = Bullet(self.rect.centerx, self.rect.centery)
+                    all_sprites.add(bullet1)
+                    all_sprites.add(bullet2)
+                    all_sprites.add(bullet3)
+                    bullets.add(bullet1)
+                    bullets.add(bullet2)
+                    bullets.add(bullet3)
 
     def hide(self):
         self.hidden = True
         self.hide_timer = pygame.time.get_ticks()
         self.rect.center = (WIDTH / 2, HEIGHT + 200)
 
+    def activate_shield(self):
+        self.armour = 0
+        self.shield_activated = True
+        self.shield_active = pygame.time.get_ticks()
+
+
+class Shield(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(shield_image, (50, 38))
+        # self.image.set_alpha(30)
+        self.rect = self.image.get_rect()
+        self.image.set_alpha(0)
+        self.rect.centerx = WIDTH / 2
+        self.rect.bottom = HEIGHT - 10
+
+    def update(self, x, y, alpha):
+        self.image.set_alpha(alpha)
+        self.rect.x = x
+        self.rect.y = y
+
 
 class Mob(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        # self.image_orig = random.choice(meteor_images)
         self.image_orig = pygame.image.load(path.join(img_dir, 'meteorBrown_med1.png')).convert_alpha()
         self.image_orig.set_colorkey(BLACK)
         self.image = self.image_orig.copy()
         self.rect = self.image.get_rect()
         self.hit_point = random.randint(30, 100)
-        self.image_orig = pygame.transform.scale(self.image_orig, (43 * self.hit_point // 60, 43 * self.hit_point // 60))
+        self.image_orig = pygame.transform.scale(self.image_orig,
+                                                 (43 * self.hit_point // 60, 43 * self.hit_point // 60))
         self.score = self.hit_point
         self.rect.x = random.randrange(WIDTH - self.rect.width)
         self.rect.y = random.randrange(-150, -100)
@@ -246,15 +280,14 @@ class Mob(pygame.sprite.Sprite):
         self.rotate()
         self.rect.x += self.speedx
         self.rect.y += self.speedy
-        if self.rect.top > HEIGHT + 10 or self.rect.left < -25 or self.rect.right > WIDTH + 20:
-            self.rect.x = random.randrange(WIDTH - self.rect.width)
-            self.rect.y = random.randrange(-100, -40)
-            self.speedy = random.randrange(1, 8)
+        if self.rect.top > HEIGHT + 100 or self.rect.left < -100 or self.rect.right > WIDTH + 100:
+            self.kill()
+            newmob()
         if self.hit_point <= 0:
             self.kill()
             expl = Explosion(hit.rect.center, 'lg')
             all_sprites.add(expl)
-            if random.random() > 0.9:
+            if random.random() > 0.95:
                 pow = Pow(hit.rect.center)
                 all_sprites.add(pow)
                 powerups.add(pow)
@@ -332,9 +365,8 @@ player_mini_img = pygame.transform.scale(player_img, (25, 19))
 player_mini_img.set_colorkey(BLACK)
 bullet_img = pygame.image.load(path.join(img_dir, "laserRed16.png")).convert()
 meteor_images = []
-# meteor_list = ['meteorBrown_med1.png']
-# for img in meteor_list:
-#     meteor_images.append(pygame.image.load(path.join(img_dir, img)).convert_alpha())
+
+shield_image = pygame.image.load(path.join(img_dir, "shield.png")).convert_alpha()
 
 explosion_anim = {}
 explosion_anim['lg'] = []
@@ -353,7 +385,7 @@ for i in range(9):
     img.set_colorkey(BLACK)
     explosion_anim['player'].append(img)
 powerup_images = {}
-powerup_images['shield'] = pygame.image.load(path.join(img_dir, 'shield_gold.png')).convert_alpha()
+powerup_images['shield'] = pygame.image.load(path.join(img_dir, 'hp.png')).convert_alpha()
 powerup_images['gun'] = pygame.image.load(path.join(img_dir, 'bolt_gold.png')).convert_alpha()
 
 # shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'pew.wav'))
@@ -367,7 +399,11 @@ all_sprites = pygame.sprite.Group()
 mobs = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 powerups = pygame.sprite.Group()
+shields = pygame.sprite.Group()
+shield = Shield()
 player = Player()
+# all_sprites.add(shield)
+shields.add(shield)
 all_sprites.add(player)
 for i in range(8):
     newmob()
@@ -375,8 +411,10 @@ score = 0
 
 game_over = True
 running = True
+last_spawn = pygame.time.get_ticks()
 while running:
     if game_over:
+        show_go_screen()
         game_over = False
         all_sprites = pygame.sprite.Group()
         mobs = pygame.sprite.Group()
@@ -387,7 +425,6 @@ while running:
         for i in range(8):
             newmob()
         score = 0
-        show_go_screen()
 
     clock.tick(FPS)
     for event in pygame.event.get():
@@ -398,16 +435,13 @@ while running:
 
     hits = pygame.sprite.groupcollide(mobs, bullets, False, True)
     for hit in hits:
-        score += 50 + hit.score // 4
+        score += 50 + hit.score // 8
         # random.choice(expl_sounds).play()
-        print(hit.hit_point)
         hit.hit_point -= player.damage
-        print(hit.hit_point)
-
 
     hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
-        score += 50 + hit.score // 4
+        score += 50 + hit.score // 8
         player.shield -= hit.score * 2 * player.armour
         expl = Explosion(hit.rect.center, 'sm')
         all_sprites.add(expl)
@@ -430,11 +464,6 @@ while running:
             # power_sound.play()
 
     if player.lives == 0:
-        st = int(open("data/high_score.txt").read())
-        if score > st:
-            file = open("data/high_score.txt", 'w')
-            file.write(str(score))
-            file.close()
         game_over = True
 
     screen.fill(BLACK)
@@ -455,6 +484,14 @@ while running:
         background_rect2.bottom = HEIGHT - background_rect.height * 2
     if background_rect3.top >= HEIGHT:
         background_rect3.bottom = HEIGHT - background_rect.height * 2
+    if player.shield_activated:
+        shields.update(player.rect.x, player.rect.y, 80)
+    else:
+        shields.update(player.rect.x, player.rect.y, 0)
+    if pygame.time.get_ticks() - last_spawn >= 20000:
+        newmob()
+        last_spawn = pygame.time.get_ticks()
+    shields.draw(screen)
     pygame.display.flip()
 
 pygame.quit()
