@@ -61,9 +61,11 @@ def draw_lives(surf, x, y, lives, img):
 
 
 def show_go_screen():
+    st = str(open("high_score.txt").read())
     screen.blit(background, background_rect)
     screen.blit(background2, background_rect2)
     screen.blit(background3, background_rect3)
+    draw_text(screen, 'high score:' + st, 32, WIDTH / 2, HEIGHT-40)
     draw_text(screen, "SHMUP!", 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, "Arrow keys move, Space to fire", 22,
               WIDTH / 2, HEIGHT / 2)
@@ -96,7 +98,7 @@ class Player(pygame.sprite.Sprite):
         self.hidden = False
         self.hide_timer = pygame.time.get_ticks()
         self.power = 1
-        self.armour = 0
+        self.armour = 1
         self.power_time = pygame.time.get_ticks()
         self.damage = 30
 
@@ -423,6 +425,11 @@ while running:
 
     if player.lives == 0:
         game_over = True
+        st = str(open("high_score.txt").read())
+        if score > int(st):
+            file = open("high_score.txt", 'w')
+            file.write(str(score))
+
 
     screen.fill(BLACK)
     screen.blit(background, background_rect)
