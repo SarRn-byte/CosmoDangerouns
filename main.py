@@ -1,7 +1,3 @@
-# РРіСЂР° Shmup - 14 С‡Р°СЃС‚СЊ
-# РљРѕРЅРµС† РёРіСЂС‹
-# Frozen Jam by tgfcoder <https://twitter.com/tgfcoder> licensed under CC-BY-3
-# Art from Kenney.nl
 import pygame
 import random
 from os import path
@@ -9,8 +5,8 @@ from os import path
 img_dir = path.join(path.dirname(__file__), 'data')
 snd_dir = path.join(path.dirname(__file__), 'data')
 
-WIDTH = 480
-HEIGHT = 600
+WIDTH = 700
+HEIGHT = 900
 FPS = 60
 POWERUP_TIME = 5000
 
@@ -66,6 +62,8 @@ def draw_lives(surf, x, y, lives, img):
 
 def show_go_screen():
     screen.blit(background, background_rect)
+    screen.blit(background2, background_rect2)
+    screen.blit(background3, background_rect3)
     draw_text(screen, "SHMUP!", 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, "Arrow keys move, Space to fire", 22,
               WIDTH / 2, HEIGHT / 2)
@@ -260,6 +258,12 @@ class Explosion(pygame.sprite.Sprite):
 # Р—Р°РіСЂСѓР·РєР° РІСЃРµР№ РёРіСЂРѕРІРѕР№ РіСЂР°С„РёРєРё
 background = pygame.image.load(path.join(img_dir, "starfield.png")).convert()
 background_rect = background.get_rect()
+background2 = pygame.image.load(path.join(img_dir, "starfield.png")).convert()
+background_rect2 = background2.get_rect()
+background3 = pygame.image.load(path.join(img_dir, "starfield.png")).convert()
+background_rect3 = background3.get_rect()
+background_rect2.top = background_rect.bottom
+background_rect3.bottom = background_rect.top
 player_img = pygame.image.load(path.join(img_dir, "playerShip1_orange.png")).convert_alpha()
 player_mini_img = pygame.transform.scale(player_img, (25, 19))
 player_mini_img.set_colorkey(BLACK)
@@ -286,9 +290,8 @@ for i in range(9):
     img.set_colorkey(BLACK)
     explosion_anim['player'].append(img)
 powerup_images = {}
-powerup_images['shield'] = pygame.image.load(path.join(img_dir, 'shield_gold.png')).convert_alpha()
-powerup_images['gun'] = pygame.image.load(path.join(img_dir, 'bolt_gold.png')).convert_alpha()
-
+powerup_images['shield'] = pygame.image.load(path.join(img_dir, 'shield_gold.png')).convert()
+powerup_images['gun'] = pygame.image.load(path.join(img_dir, 'bolt_gold.png')).convert()
 
 # Р—Р°РіСЂСѓР·РєР° РјРµР»РѕРґРёР№ РёРіСЂС‹
 # shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'pew.wav'))
@@ -381,12 +384,22 @@ while running:
     # Р РµРЅРґРµСЂРёРЅРі
     screen.fill(BLACK)
     screen.blit(background, background_rect)
+    screen.blit(background2, background_rect2)
+    screen.blit(background3, background_rect3)
     all_sprites.draw(screen)
     draw_text(screen, str(score), 18, WIDTH / 2, 10)
     draw_shield_bar(screen, 5, 5, player.shield)
     draw_lives(screen, WIDTH - 100, 5, player.lives,
                player_mini_img)
-    # РџРѕСЃР»Рµ РѕС‚СЂРёСЃРѕРІРєРё РІСЃРµРіРѕ, РїРµСЂРµРІРѕСЂР°С‡РёРІР°РµРј СЌРєСЂР°РЅ
+    background_rect.y += 1
+    background_rect2.y += 1
+    background_rect3.y += 1
+    if background_rect.top >= HEIGHT:
+        background_rect.bottom = HEIGHT - background_rect.height * 2
+    if background_rect2.top >= HEIGHT:
+        background_rect2.bottom = HEIGHT - background_rect.height * 2
+    if background_rect3.top >= HEIGHT:
+        background_rect3.bottom = HEIGHT - background_rect.height * 2
     pygame.display.flip()
 
 pygame.quit()
