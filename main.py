@@ -260,14 +260,14 @@ class Explosion(pygame.sprite.Sprite):
 # Р—Р°РіСЂСѓР·РєР° РІСЃРµР№ РёРіСЂРѕРІРѕР№ РіСЂР°С„РёРєРё
 background = pygame.image.load(path.join(img_dir, "starfield.png")).convert()
 background_rect = background.get_rect()
-player_img = pygame.image.load(path.join(img_dir, "playerShip1_orange.png")).convert()
+player_img = pygame.image.load(path.join(img_dir, "playerShip1_orange.png")).convert_alpfa()
 player_mini_img = pygame.transform.scale(player_img, (25, 19))
 player_mini_img.set_colorkey(BLACK)
 bullet_img = pygame.image.load(path.join(img_dir, "laserRed16.png")).convert()
 meteor_images = []
 meteor_list = ['meteorBrown_med1.png']
 for img in meteor_list:
-    meteor_images.append(pygame.image.load(path.join(img_dir, img)).convert())
+    meteor_images.append(pygame.image.load(path.join(img_dir, img)).convert_alpha())
 
 explosion_anim = {}
 explosion_anim['lg'] = []
@@ -286,8 +286,8 @@ for i in range(9):
     img.set_colorkey(BLACK)
     explosion_anim['player'].append(img)
 powerup_images = {}
-powerup_images['shield'] = pygame.image.load(path.join(img_dir, 'shield_gold.png')).convert()
-powerup_images['gun'] = pygame.image.load(path.join(img_dir, 'bolt_gold.png')).convert()
+powerup_images['shield'] = pygame.image.load(path.join(img_dir, 'shield_gold.png')).convert_alpha()
+powerup_images['gun'] = pygame.image.load(path.join(img_dir, 'bolt_gold.png')).convert_alpha()
 
 
 # Р—Р°РіСЂСѓР·РєР° РјРµР»РѕРґРёР№ РёРіСЂС‹
