@@ -102,7 +102,7 @@ class Player(pygame.sprite.Sprite):
         self.lives = 3
         self.hidden = False
         self.hide_timer = pygame.time.get_ticks()
-        self.power = 4
+        self.power = 1
         self.armour = 0.3
         self.infinite_lvl = True
         self.power_time = pygame.time.get_ticks()
@@ -112,7 +112,7 @@ class Player(pygame.sprite.Sprite):
         self.shield_active = pygame.time.get_ticks()
         self.last_armour = self.armour
         self.shield_lenght = 1000
-        self.shield_cd = 100
+        self.shield_cd = 5000
         self.max_shield = 100
 
     def update(self):
@@ -283,7 +283,7 @@ class Player(pygame.sprite.Sprite):
                     self.two_bullet()
                 if self.power == 23:
                     self.three_bullet()
-                if self.power == 24:
+                if self.power >= 24:
                     self.damage = 250
                     self.shoot_delay = 100
                     self.five_bullet()
