@@ -184,7 +184,7 @@ class Mob(pygame.sprite.Sprite):
         if now - self.last_update > 50:
             self.last_update = now
             self.rot = (self.rot + self.rot_speed) % 360
-            new_image = pygame.transform.rotate(self.image_orig, self.rot)
+            new_image = pygame.transform.rotate(self.image_orig, self.rot).convert_alpha()
             old_center = self.rect.center
             self.image = new_image
             self.rect = self.image.get_rect()
