@@ -61,13 +61,15 @@ def draw_lives(surf, x, y, lives, img):
 
 
 def show_go_screen():
+    st = open("data/high_score.txt").read()
     screen.blit(background, background_rect)
     screen.blit(background2, background_rect2)
     screen.blit(background3, background_rect3)
-    draw_text(screen, "SHMUP!", 64, WIDTH / 2, HEIGHT / 4)
-    draw_text(screen, "Arrow keys move, Space to fire", 22,
+    draw_text(screen, 'high score:' + st, 32, WIDTH / 2, HEIGHT-40)
+    draw_text(screen, "SpaceBackgammon", 64, WIDTH / 2, HEIGHT / 4)
+    draw_text(screen, "Arrow keys move, Space to fire, CTRL to shield", 22,
               WIDTH / 2, HEIGHT / 2)
-    draw_text(screen, "Press a key to begin", 18, WIDTH / 2, HEIGHT * 3 / 4)
+    draw_text(screen, "Press ESC key to begin", 18, WIDTH / 2, HEIGHT * 3 / 4)
     pygame.display.flip()
     waiting = True
     while waiting:
@@ -414,7 +416,6 @@ running = True
 last_spawn = pygame.time.get_ticks()
 while running:
     if game_over:
-        show_go_screen()
         game_over = False
         all_sprites = pygame.sprite.Group()
         mobs = pygame.sprite.Group()
@@ -425,6 +426,7 @@ while running:
         for i in range(8):
             newmob()
         score = 0
+        show_go_screen()
 
     clock.tick(FPS)
     for event in pygame.event.get():
@@ -464,7 +466,13 @@ while running:
             # power_sound.play()
 
     if player.lives == 0:
+        st = int(open("data/high_score.txt").read())
+        if score > st:
+            file = open("data/high_score.txt", 'w')
+            file.write(str(score))
+            file.close()
         game_over = True
+
 
     screen.fill(BLACK)
     screen.blit(background, background_rect)
