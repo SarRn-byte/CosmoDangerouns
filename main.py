@@ -71,9 +71,6 @@ def show_go_screen():
     screen.blit(menu, menu_rect)
     screen.blit(highscore, highscore_rect)
     draw_text(screen, st, 32, WIDTH / 2, HEIGHT - 32)
-    # draw_text(screen, "Arrow keys move, Space to fire, CTRL to shield", 22,
-    #           WIDTH / 2, HEIGHT / 2)
-    # draw_text(screen, "Press ESC key to begin", 18, WIDTH / 2, HEIGHT * 3 / 4)
     pygame.display.flip()
     waiting = True
     while waiting:
@@ -81,6 +78,7 @@ def show_go_screen():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
+                exit(-1)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     waiting = False
@@ -123,8 +121,14 @@ class Player(pygame.sprite.Sprite):
 
         if self.hidden and pygame.time.get_ticks() - self.hide_timer > 1000:
             self.hidden = False
+            self.activate_shield()
             self.rect.centerx = WIDTH / 2
             self.rect.bottom = HEIGHT - 10
+            self.image.set_alpha(1000)
+
+        if self.hidden and pygame.time.get_ticks() - self.hide_timer <= 1000:
+            self.rect.x = 1000
+            self.rect.y = 1000
 
         self.speedx = 0
         self.speedy = 0
@@ -144,14 +148,15 @@ class Player(pygame.sprite.Sprite):
                 self.activate_shield()
         self.rect.x += self.speedx
         self.rect.y += self.speedy
-        if self.rect.right > WIDTH:
-            self.rect.right = WIDTH
-        if self.rect.left < 0:
-            self.rect.left = 0
-        if self.rect.bottom > HEIGHT:
-            self.rect.bottom = HEIGHT
-        if self.rect.top < 0:
-            self.rect.top = 0
+        if not self.hidden:
+            if self.rect.right > WIDTH:
+                self.rect.right = WIDTH
+            if self.rect.left < 0:
+                self.rect.left = 0
+            if self.rect.bottom > HEIGHT:
+                self.rect.bottom = HEIGHT
+            if self.rect.top < 0:
+                self.rect.top = 0
         if self.shield_activated and pygame.time.get_ticks() - self.shield_active >= self.shield_lenght:
             self.armour = self.last_armour
             self.shield_activated = False
@@ -212,10 +217,8 @@ class Player(pygame.sprite.Sprite):
                 self.last_shot = now
                 if self.power == 1:
                     self.one_bullet()
-                    # shoot_sound.play()
                 if self.power == 2:
                     self.two_bullet()
-                    # shoot_sound.play()
                 if self.power == 3:
                     self.three_bullet()
                 if self.power == 4:
@@ -283,14 +286,29 @@ class Player(pygame.sprite.Sprite):
                     self.two_bullet()
                 if self.power == 23:
                     self.three_bullet()
-                if self.power >= 24:
+                if self.power == 24:
                     self.damage = 250
                     self.shoot_delay = 100
                     self.five_bullet()
                     self.new_max_shield = 850
                     self.shield = self.update_shield(self.max_shield, self.new_max_shield, self.shield)
                     self.max_shield = self.new_max_shield
+                    # self.max_lvl = True
+                if self.power == 25:
+                    self.damage = 450
+                    self.shoot_delay = 50
+                    self.one_bullet()
+                if self.power == 26:
+                    self.two_bullet()
+                if self.power == 27:
+                    self.three_bullet()
+                if self.power >= 28:
+                    self.five_bullet()
+                    self.new_max_shield = 1250
+                    self.shield = self.update_shield(self.max_shield, self.new_max_shield, self.shield)
+                    self.max_shield = self.new_max_shield
                     self.max_lvl = True
+                shoot_sound.play()
 
     def hide(self):
         self.hidden = True
@@ -423,6 +441,7 @@ class Explosion(pygame.sprite.Sprite):
         self.frame = 0
         self.last_update = pygame.time.get_ticks()
         self.frame_rate = 50
+        random.choice(expl_sounds).play()
 
     def update(self):
         now = pygame.time.get_ticks()
@@ -486,12 +505,13 @@ powerup_images = {}
 powerup_images['shield'] = pygame.image.load(path.join(img_dir, 'hp.png')).convert_alpha()
 powerup_images['gun'] = pygame.image.load(path.join(img_dir, 'bolt_gold.png')).convert_alpha()
 
-# shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'pew.wav'))
-# shield_sound = pygame.mixer.Sound(path.join(snd_dir, 'pow4.wav'))
-# power_sound = pygame.mixer.Sound(path.join(snd_dir, 'pow5.wav'))
-# expl_sounds = []
-# for snd in ['expl3.wav', 'expl6.wav']:
-#     expl_sounds.append(pygame.mixer.Sound(path.join(snd_dir, snd)))
+shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'pew.wav'))
+shield_sound = pygame.mixer.Sound(path.join(snd_dir, 'pow1.wav'))
+power_sound = pygame.mixer.Sound(path.join(snd_dir, 'buzz.ogg'))
+expl_sounds = []
+for snd in ['expl3.wav', 'expl6.wav']:
+    expl_sounds.append(pygame.mixer.Sound(path.join(snd_dir, snd)))
+player_expl_sound = pygame.mixer.Sound(path.join(snd_dir, 'explosion.wav'))
 
 all_sprites = pygame.sprite.Group()
 mobs = pygame.sprite.Group()
@@ -500,7 +520,6 @@ powerups = pygame.sprite.Group()
 shields = pygame.sprite.Group()
 shield = Shield()
 player = Player()
-# all_sprites.add(shield)
 shields.add(shield)
 all_sprites.add(player)
 for i in range(8):
@@ -537,7 +556,7 @@ if __name__ == '__main__':
         hits = pygame.sprite.groupcollide(mobs, bullets, False, True)
         for hit in hits:
             score += 50 + hit.score // 8
-            # random.choice(expl_sounds).play()
+
             hit.hit_point -= player.damage
 
         hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)
@@ -549,6 +568,7 @@ if __name__ == '__main__':
             newmob()
             if player.shield <= 0:
                 death_explosion = Explosion(player.rect.center, 'player')
+                player_expl_sound.play()
                 all_sprites.add(death_explosion)
                 player.hide()
                 player.lives -= 1
@@ -558,11 +578,12 @@ if __name__ == '__main__':
         for hit in hits:
             if hit.type == 'shield':
                 player.shield += 30
+                shield_sound.play()
                 if player.shield > player.max_shield:
                     player.shield = player.max_shield
             if hit.type == 'gun':
                 player.powerup()
-                # power_sound.play()
+                power_sound.play()
 
         if player.lives == 0:
             st = int(open("data/high_score.txt").read())
@@ -598,6 +619,9 @@ if __name__ == '__main__':
             newmob()
             last_spawn = pygame.time.get_ticks()
 
+        if player.damage == 15:
+            spawn_pow_chance = 0.5
+            bullet_img = pygame.image.load(path.join(img_dir, "laserRed16.png")).convert()
         if player.damage == 40:
             spawn_pow_chance = 0.85
             bullet_img = pygame.image.load(path.join(img_dir, "LaserOrange.png")).convert()
@@ -611,13 +635,15 @@ if __name__ == '__main__':
             spawn_pow_chance = 0.95
             bullet_img = pygame.image.load(path.join(img_dir, "LaserPurple.png")).convert()
         if player.damage == 250:
-            spawn_pow_chance = 0.98
+            spawn_pow_chance = 0.985
             bullet_img = pygame.image.load(path.join(img_dir, "LaserDarkBlue.png")).convert()
+        if player.damage == 450:
+            spawn_pow_chance = 0.995
+            bullet_img = pygame.image.load(path.join(img_dir, "LaserRainbow.png")).convert_alpha()
 
         mobs_hp = ((score // 400) + 30, (score // 400) + 100)
-        # print(mobs_hp)
-        # print(player.shield, player.max_shield)
         shields.draw(screen)
         pygame.display.flip()
 
     pygame.quit()
+    exit(-1)
